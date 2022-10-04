@@ -1,0 +1,25 @@
+#!/bin/bash
+##############################################################################
+# Author: Drew Neavin
+# Date: 2022-10-03
+# Description: This script is to run souporcell on the 18-line hiPSC village with Demuxafy (https://demultiplexing-doublet-detecting-docs.readthedocs.io/en/latest/). 
+##############################################################################
+
+
+SAMPLE_INFO="iPSC_Village_Publication/scripts/hiPSC_village_18_lines/Pool_meta_data.tsv" # (accessible from the iPSC_Village_Publication github: https://github.com/powellgenomicslab/iPSC_Village_Publication)
+SAMPLE=$(tail -n +2 $SAMPLE_INFO | tr '\n' ':' | cut -d ':' -f $SGE_TASK_ID)
+
+VCF="/path/to/output/vcf/snps_18_hiPSC_r2_maf0.3_exons_hg38.vcf" # Exons only
+FASTA="/path/to/GRCh38/genome.fa"
+
+BAM=$DATA/$SAMPLE/outs/possorted_genome_bam.bam ### Available by processing fastq data through cellranger or on request from d.neavin @ garvan.org.au
+BARCODES="$DATA/$SAMPLE/outs/filtered_feature_bc_matrix/barcodes.tsv.gz" ### Available by processing fastq data through cellranger or on request from d.neavin @ garvan.org.au
+
+
+mkdir -p mkdir -p $OUT/$SAMPLE
+
+singularity exec Demuxafy.sif souporcell_pipeline.py -i $BAM -b $BARCODES -f $FASTA -t $T -o $OUT/$SAMPLE -k 18 --common_variants $VCF
+singularity exec Demuxafy.sif bash souporcell_summary.sh $OUT/$SAMPLE/clusters.tsv
+singularity exec Demuxafy.sif bash souporcell_summary.sh $OUT/$SAMPLE/clusters.tsv > $OUT/$SAMPLE/souporcell_summary.tsv
+singularity exec Demuxafy.sif Assign_Indiv_by_Geno.R -r $VCF -c $OUT/$SAMPLE/cluster_genotypes.vcf -o $OUT/$SAMPLE
+

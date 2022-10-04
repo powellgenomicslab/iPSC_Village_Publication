@@ -1,0 +1,22 @@
+## Date: 4 October, 2022
+## Author: Drew Neavin
+## Reason: RNA velocity on iPSC village samples for pseudotime following the Allevin tutorial https://combine-lab.github.io/alevin-tutorial/2020/alevin-velocity/
+
+
+## SGE SETTINGS
+#$ -cwd
+#$ -S /bin/bash
+#$ -q short.q
+#$ -r yes
+#$ -pe smp 32
+#$ -l mem_requested=10G 
+#$ -l tmp_requested=10G
+#$ -N salmon
+#$ -j y
+
+OUT="/path/to/output/RNA_Velocity_Pseudotime/preprocess"
+
+
+salmon index -t $OUT/combined_fasta.fa -i $OUT/gencode.v38.annotation.expanded.sidx --gencode -p 32
+## combined_fasta.fa produced by 'scVelo_preprocess.R' script from iPSC_Village_Publication github: https://github.com/powellgenomicslab/iPSC_Village_Publication
+## gencode.v38.annotation.expanded.sidx produced by 'scVelo_preprocess.R' script from iPSC_Village_Publication github: https://github.com/powellgenomicslab/iPSC_Village_Publication
