@@ -52,7 +52,7 @@ seurat <- readRDS("/path/to/output/variance_partition_cryo/seurat_integrated_cry
 
 
 ### Make DF for modeling ###
-df_hier_unscale <- data.frame("Expression" = seurat[["SCT"]]@scale.data[gene,], "Village" = as.factor(ifelse(seurat@meta.data$Time == "Baseline", 0, 1)), "Line" = seurat@meta.data$Final_Assignment, "Replicate" = as.factor(gsub("[A-Z][a-z]+", "", seurat@meta.data$MULTI_ID)), "Cryopreserved" = seurat$Cryopreserved)
+df_hier_unscale <- data.frame("Expression" = seurat[["SCT"]]@scale.data[gene,], "Village" = as.factor(ifelse(seurat@meta.data$Time == "Baseline", 0, 1)), "Line" = seurat@meta.data$Final_Assignment, "Replicate" = as.factor(gsub("[A-Z][a-z]+", "", seurat@meta.data$MULTI_ID)), "Cryopreserved" = seurat$Cryopreservation)
 df_hier_unscale <- df_hier_unscale[which(df_hier_unscale$Village == 1),]
 colnames(df_hier_unscale)[1] <- "Expression"
 
@@ -83,41 +83,41 @@ while(boolFalse==F & length(variables) > 0){
 if (!length(variables) == 0){
 
 
-### Deal with singular fits by removing last variable until a fit can be found - ordered in variables buy importance
-while (!model_glmmtmb$sdr$pdHess & length(variables) > 0 ){
-    print("Singular fit: removing last variable and rerunning with one less covariate.")
-    if (length(variables) > 1){
-        variables <- variables[1:(length(variables) -1)]
-        print(variables)
-        model_all <- as.formula(paste0("Expression ~ (1|", paste0(variables, collapse = ") + (1|"), ")"))
-        model_glmmtmb <- suppress_warnings(glmmTMB(formula = noquote(model_all), data = df_hier_unscale, REML = TRUE), "giveCsparse")
-    } else {
-        variables <- c()
-    }
-}
-
-print(variables)
-
-if (length(variables) > 0){
-
-    model_loo <- list()
-
-    icc <- data.table(grp = variables, P = as.numeric(NA))
-
-    for (variable in variables){
-        print(variable)
+    ### Deal with singular fits by removing last variable until a fit can be found - ordered in variables buy importance
+    while (!model_glmmtmb$sdr$pdHess & length(variables) > 0 ){
+        print("Singular fit: removing last variable and rerunning with one less covariate.")
         if (length(variables) > 1){
-            model <- as.formula(paste0("Expression ~ (1|", paste0(variables[!variables %in% variable], collapse = ") + (1|"), ")"))
+            variables <- variables[1:(length(variables) -1)]
+            print(variables)
+            model_all <- as.formula(paste0("Expression ~ (1|", paste0(variables, collapse = ") + (1|"), ")"))
+            model_glmmtmb <- suppress_warnings(glmmTMB(formula = noquote(model_all), data = df_hier_unscale, REML = TRUE), "giveCsparse")
         } else {
-            model <- as.formula(paste0("Expression ~ 1"))
+            variables <- c()
         }
-        model_loo[[variable]] <- suppress_warnings(glmmTMB(formula = noquote(model), data = df_hier_unscale, REML = TRUE), "giveCsparse")
-        icc[grp == variable]$P <- anova(model_loo[[variable]], model_glmmtmb)$`Pr(>Chisq)`[2]
     }
 
+    print(variables)
 
-    if (!(any(icc[grp != "Residual"]$P > 0.05/length(variables)) | any(is.na(icc[grp != "Residual"]$P)))){
-        model_loo_updated <- model_loo
+    if (length(variables) > 0){
+
+        model_loo <- list()
+
+        icc <- data.table(grp = variables, P = as.numeric(NA))
+
+        for (variable in variables){
+            print(variable)
+            if (length(variables) > 1){
+                model <- as.formula(paste0("Expression ~ (1|", paste0(variables[!variables %in% variable], collapse = ") + (1|"), ")"))
+            } else {
+                model <- as.formula(paste0("Expression ~ 1"))
+            }
+            model_loo[[variable]] <- suppress_warnings(glmmTMB(formula = noquote(model), data = df_hier_unscale, REML = TRUE), "giveCsparse")
+            icc[grp == variable]$P <- anova(model_loo[[variable]], model_glmmtmb)$`Pr(>Chisq)`[2]
+        }
+
+
+        if (!(any(icc[grp != "Residual"]$P > 0.05/length(variables)) | any(is.na(icc[grp != "Residual"]$P)))){
+            model_loo_updated <- model_loo
 
             updated_model <- as.formula(paste0("Expression ~ 1 + (1|", paste0(variables, collapse = ") + (1|"), ")"))
 
@@ -144,51 +144,51 @@ if (length(variables) > 0){
         }
 
 
-    while((any(icc[grp != "Residual"]$P > 0.05/length(variables)) | any(is.na(icc[grp != "Residual"]$P)))){
+        while((any(icc[grp != "Residual"]$P > 0.05/length(variables)) | any(is.na(icc[grp != "Residual"]$P)))){
 
-        print("Removing non-significant vartiables and retesting signficance")
+            print("Removing non-significant vartiables and retesting signficance")
 
-        ##### Identify variables to keep #####
-        variables <- icc[P < 0.05/length(variables)]$grp
+            ##### Identify variables to keep #####
+            variables <- icc[P < 0.05/length(variables)]$grp
 
-        if (length(variables) > 0){
-            
-            ##### Calculate full model #####
-            updated_model <- as.formula(paste0("Expression ~ 1 + (1|", paste0(variables, collapse = ") + (1|"), ")"))
-
-
-            model_loo_updated <- list()
-            model_loo_updated[["all"]] <- suppress_warnings(glmmTMB(formula = noquote(updated_model), data = df_hier_unscale, REML = TRUE), "giveCsparse")
+            if (length(variables) > 0){
+                
+                ##### Calculate full model #####
+                updated_model <- as.formula(paste0("Expression ~ 1 + (1|", paste0(variables, collapse = ") + (1|"), ")"))
 
 
-
-            ### Calculate the variance explained by each of the included variables ###
-            icc <- icc_glmmtmb(model_loo_updated[["all"]])
+                model_loo_updated <- list()
+                model_loo_updated[["all"]] <- suppress_warnings(glmmTMB(formula = noquote(updated_model), data = df_hier_unscale, REML = TRUE), "giveCsparse")
 
 
 
-            ### Recalfulate significance ###
-            icc$P <- as.numeric(NA)
-            icc$gene <- gene
+                ### Calculate the variance explained by each of the included variables ###
+                icc <- icc_glmmtmb(model_loo_updated[["all"]])
 
-            for (variable in variables){
-                print(variable)
-                if (length(variables) > 1){
-                    model <- as.formula(paste0("Expression ~ 1 + (1|", paste0(variables[!variables %in% variable], collapse = ") + (1|"), ")"))
-                } else {
-                    model <- as.formula(paste0("Expression ~ 1"))
+
+
+                ### Recalfulate significance ###
+                icc$P <- as.numeric(NA)
+                icc$gene <- gene
+
+                for (variable in variables){
+                    print(variable)
+                    if (length(variables) > 1){
+                        model <- as.formula(paste0("Expression ~ 1 + (1|", paste0(variables[!variables %in% variable], collapse = ") + (1|"), ")"))
+                    } else {
+                        model <- as.formula(paste0("Expression ~ 1"))
+                    }
+                    model_loo_updated[[variable]] <- suppress_warnings(glmmTMB(formula = noquote(model), data = df_hier_unscale, REML = TRUE), "giveCsparse")
+                    icc[grp == variable]$P <- anova(model_loo_updated[[variable]], model_loo_updated[["all"]])$`Pr(>Chisq)`[2]
                 }
-                model_loo_updated[[variable]] <- suppress_warnings(glmmTMB(formula = noquote(model), data = df_hier_unscale, REML = TRUE), "giveCsparse")
-                icc[grp == variable]$P <- anova(model_loo_updated[[variable]], model_loo_updated[["all"]])$`Pr(>Chisq)`[2]
+
+
+        
+            } else {
+                icc <- data.table(grp=character(), vcov=numeric(), icc=numeric(), percent=numeric(), P=numeric(), gene=character())
+                model_loo_updated <- list()
             }
-
-
-    
-        } else {
-            icc <- data.table(grp=character(), vcov=numeric(), icc=numeric(), percent=numeric(), P=numeric(), gene=character())
-            model_loo_updated <- list()
         }
-    }
 
         interaction_variables <- c()
 
@@ -219,7 +219,7 @@ if (length(variables) > 0){
                     interaction_variables <- interaction_variables[1:(length(interaction_variables) -1)]
                 } else {
                     interaction_variables <- c()
-            }
+                }
             })
             }
 
@@ -330,11 +330,11 @@ if (length(variables) > 0){
             if ("Line" %in% variables){
                 print("Making residuals for qtl detection")
                 if (length(variables) > 1){
-                        if (length(interaction_variables) > 0){
-                            model_no_line <- as.formula(paste0("Expression ~ (1|", paste0(c(variables, interaction_variables)[-grep("Line", c(variables, interaction_variables))], collapse = ") + (1|"), ")"))
-                        } else {
-                            model_no_line <- as.formula(paste0("Expression ~ (1|", paste0(variables[!variables %in% "Line"], collapse = ") + (1|"), ")"))
-                        }
+                    if (length(interaction_variables) > 0){
+                        model_no_line <- as.formula(paste0("Expression ~ (1|", paste0(c(variables, interaction_variables)[-grep("Line", c(variables, interaction_variables))], collapse = ") + (1|"), ")"))
+                    } else {
+                        model_no_line <- as.formula(paste0("Expression ~ (1|", paste0(variables[!variables %in% "Line"], collapse = ") + (1|"), ")"))
+                    }
                 } else {
                     model_no_line <- as.formula(paste0("Expression ~ 1"))
                 }

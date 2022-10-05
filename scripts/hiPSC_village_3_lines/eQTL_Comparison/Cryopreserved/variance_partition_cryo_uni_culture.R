@@ -52,7 +52,7 @@ seurat <- readRDS("/path/to/output/variance_partition_cryo/seurat_integrated_cry
 
 
 ### Make DF for modeling ###
-df_hier_unscale <- data.frame("Expression" = seurat[["SCT"]]@scale.data[gene,], "Village" = as.factor(ifelse(seurat@meta.data$Time == "Baseline", 0, 1)), "Line" = seurat@meta.data$Final_Assignment, "Replicate" = as.factor(gsub("[A-Z][a-z]+", "", seurat@meta.data$MULTI_ID)), "Cryopreserved" = seurat$Cryopreserved)
+df_hier_unscale <- data.frame("Expression" = seurat[["SCT"]]@scale.data[gene,], "Village" = as.factor(ifelse(seurat@meta.data$Time == "Baseline", 0, 1)), "Line" = seurat@meta.data$Final_Assignment, "Replicate" = as.factor(gsub("[A-Z][a-z]+", "", seurat@meta.data$MULTI_ID)), "Cryopreserved" = seurat$Cryopreservation)
 df_hier_unscale <- df_hier_unscale[which(df_hier_unscale$Village == 0),]
 colnames(df_hier_unscale)[1] <- "Expression"
 

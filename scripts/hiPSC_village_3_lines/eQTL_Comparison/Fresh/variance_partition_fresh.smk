@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-genes_file = "/path/to/output/variance_partition_fresh/seurat_integrated_noncryo_1pct_expressing_genes.tsv"
+genes_file = "/path/to/output/eQTL_Comparison/variance_partition_fresh/seurat_integrated_noncryo_1pct_expressing_genes.tsv"
 genes = pd.read_csv(genes_file, sep = "\t")
 
 
@@ -15,7 +15,7 @@ rule all:
 
 rule partition_variance_uniculture:
     input:
-        seurat = "/path/to/output/variance_partition_fresh/seurat_integrated_noncryo_1pct_expressing.rds"
+        seurat = "/path/to/output/eQTL_Comparison/variance_partition_fresh/seurat_integrated_noncryo_1pct_expressing.rds"
     output:
         "/path/to/output/eQTL_Comparison/variance_partition_fresh/uniculture/gene_separated/icc/{gene}_icc.rds",
     resources:
@@ -23,7 +23,7 @@ rule partition_variance_uniculture:
         disk_per_thread_gb = lambda wildcards, attempt: attempt * 16
     threads: 4
     params:
-        script = "iPSC_Village/iPSC_Village_Publication/scripts/hiPSC_village_3_lines/eQTL_Comparison/Fresh/variance_partition_fresh_uni_culture.R", # This script is available from the github: https://github.com/powellgenomicslab/iPSC_Village_Publication
+        script = "iPSC_Village_Publication/scripts/hiPSC_village_3_lines/eQTL_Comparison/Fresh/variance_partition_fresh_uni_culture.R", # This script is available from the github: https://github.com/powellgenomicslab/iPSC_Village_Publication
         out_icc="/path/to/output/eQTL_Comparison/variance_partition_fresh/uniculture/gene_separated/icc/",
         out_model="/path/to/output/eQTL_Comparison/variance_partition_freshuniculture//gene_separated/fit_models/",
         out_resids="/path/to/output/eQTL_Comparison/variance_partition_fresh/uniculture/gene_separated/residuals4qtl/",
@@ -36,9 +36,8 @@ rule partition_variance_uniculture:
         mkdir -p {params.out_model_interaction}
         mkdir -p {params.out_resids}
         
-        /directflow/SCCGGroupShare/projects/DrewNeavin/software/anaconda3/envs/baseR402/bin/Rscript {params.script} {params.out_icc_interaction} {params.out_icc} {params.out_model_interaction} {params.out_model} {params.out_resids} {wildcards.gene}
+        Rscript {params.script} {params.out_icc_interaction} {params.out_icc} {params.out_model_interaction} {params.out_model} {params.out_resids} {wildcards.gene}
         """
-
 
 
 rule partition_variance_village:
@@ -64,5 +63,5 @@ rule partition_variance_village:
         mkdir -p {params.out_model_interaction}
         mkdir -p {params.out_resids}
         
-        /directflow/SCCGGroupShare/projects/DrewNeavin/software/anaconda3/envs/baseR402/bin/Rscript {params.script} {params.out_icc_interaction} {params.out_icc} {params.out_model_interaction} {params.out_model} {params.out_resids} {wildcards.gene}
+        Rscript {params.script} {params.out_icc_interaction} {params.out_icc} {params.out_model_interaction} {params.out_model} {params.out_resids} {wildcards.gene}
         """

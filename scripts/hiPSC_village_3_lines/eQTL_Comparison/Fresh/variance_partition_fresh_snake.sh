@@ -1,7 +1,7 @@
 
 
 SNAKEFILE="iPSC_Village_Publication/scripts/hiPSC_village_3_lines/eQTL_Comparison/variance_partition_eQTL_comparison.smk" # This script is available from the github: https://github.com/powellgenomicslab/iPSC_Village_Publication
-LOG="/path/to/output/eQTL_Comparison/variance_partition_fresh/gene_separated/logs/"
+LOG="/path/to/output/eQTL_Comparison/variance_partition_fresh/logs/"
 
 mkdir -p $LOG
 

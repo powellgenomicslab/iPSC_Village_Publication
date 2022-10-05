@@ -1,6 +1,9 @@
 
-SNAKEFILE="iPSC_Village_Publication/scripts/hiPSC_village_3_lines/eQTL_Comparison/Cryopreserved/variance_partition_post_review_cryo.smk"
-LOG="/path/to/output/eQTL_Comparison/variance_partition_cryo/logs/"
+
+SNAKEFILE="iPSC_Village_Publication/scripts/hiPSC_village_3_lines/eQTL_Comparison/Fresh/uniculture/test_eQTL.smk"
+LOG="/path/to/output/eQTL_Comparison/Fresh/uni_village/uniculture/logs/"
+
+mkdir -p $LOG
 
 
 
@@ -23,3 +26,4 @@ nohup \
         -j y \
         -V" \
   > $LOG/nohup_`date +%Y-%m-%d.%H:%M:%S`.log &
+
