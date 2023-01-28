@@ -11,7 +11,6 @@ rule all:
         expand("/path/to/output/hiPSC_village_18_lines/iPSC_maintenance/Variance/gene_separated/fit_models/{gene}_fitted_models.rds", gene = genes.Gene),
 
 
-### Tried manually with just CHCHD2 and the Ncov impacts the ability to get the line effect so cannot run this way (could downsample some of the pools to be more even sizes)
 rule partition_variance_integratedSCT:
     input:
         seurat =  ancient("/path/to/output/hiPSC_village_18_lines/iPSC_maintenance/QC/time-integrated_filtered_seurat_1pct_expressing.rds") ## Produced with iPSC_Village_Publication/scripts/hiPSC_village_18_lines/iPSC_maintenance/Quality_Control_and_Processing/hiPSC_village_18_lines_QC.R

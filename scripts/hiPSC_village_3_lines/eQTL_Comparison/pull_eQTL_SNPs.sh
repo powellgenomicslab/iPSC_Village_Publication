@@ -13,31 +13,24 @@ mkdir -p $INTERSECT_OUT
 
 
 ### Filter on individuals and MAF for our lines ###
-singularity exec Demuxafy.sif bcftools filter --include 'R2>=0.3' $vcf > /path/to/output/vcf/snps_3_hiPSC_R2_0.3.vcf
+bcftools filter --include 'R2>=0.3' $vcf > $OUT/snps_3_hiPSC_R2_0.3.vcf
 
-VCF_R2="/directflow/SCCGGroupShare/projects/DrewNeavin/iPSC_Village/data/SNPgenotypes/"
 
-sed '/<CN/d' /path/to/output/vcf/snps_3_hiPSC_R2_0.3.vcf > $INTERSECT_OUT/snps_3_hiPSC_R2_0.3.vcf
+sed '/<CN/d' $OUT/snps_3_hiPSC_R2_0.3.vcf > $INTERSECT_OUT/snps_3_hiPSC_R2_0.3.vcf
 sed -i '/<INV>/d' $INTERSECT_OUT/snps_3_hiPSC_R2_0.3.vcf
 
 
-conda activate vcftools
 
-    vcftools --vcf $INTERSECT_OUT/snps_3_hiPSC_R2_0.3.vcf --recode --recode-INFO-all --mac 1 --out $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered
+vcftools --vcf $INTERSECT_OUT/snps_3_hiPSC_R2_0.3.vcf --recode --recode-INFO-all --mac 1 --out $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered
 
-    bcftools view -e 'COUNT(GT="AA")=N_SAMPLES || COUNT(GT="RR")=N_SAMPLES || COUNT(GT="RA")=N_SAMPLES' $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered.recode.vcf > $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered_diff_genotypes.vcf
-
-conda deactivate
+bcftools view -e 'COUNT(GT="AA")=N_SAMPLES || COUNT(GT="RR")=N_SAMPLES || COUNT(GT="RA")=N_SAMPLES' $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered.recode.vcf > $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered_diff_genotypes.vcf
 
 
 
 ##### DEBOEVER DATA #####
 ### Intersect with these SNPs ##$#
-conda activate bedtools
+bedtools intersect -a $OUT/deboever.bed -b $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered_diff_genotypes.vcf -wa -wb > $INTERSECT_OUT/deboever_imputed_overlapping_filtered.bed
 
-    bedtools intersect -a $OUT/deboever.bed -b $INTERSECT_OUT/snps_3_hiPSC_R2_0.3_filtered_diff_genotypes.vcf -wa -wb > $INTERSECT_OUT/deboever_imputed_overlapping_filtered.bed
-
-conda deactivate
 
 
 head -n 1 $OUT/deboever.bed > $INTERSECT_OUT/deboever_header_bed.tsv
